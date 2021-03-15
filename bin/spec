@@ -1,0 +1,130 @@
+#! /usr/bin/env bash
+
+SPEC_VERSION="0.3.0"
+
+print_help() {
+  echo "spec version $SPEC_VERSION
+
+Usage: spec [directory/ or file.spec.sh] [-f -p -e -c -h -v]
+
+Options:
+
+  -e, --name, --pattern [pattern]
+
+  -c, --config [config file]
+
+  -f, --fail-fast, --fast-fail
+
+  -p, --print, --dry--run
+
+  -h, --help
+
+  -v, --version
+
+Examples:
+
+  spec file.spec.sh                   Runs file.spec.sh
+
+  spec file.spec.sh another.spec.sh   Runs two spec files
+
+  spec directory/                     Recursively searches directory/ for
+                                      *.spec.sh and *.test.sh files to run
+
+  spec                                Recursively searches current directory for
+                                      *.spec.sh and *.test.sh files to run
+
+  spec -e ^hello                      Runs tests with names that start with \"hello\"
+
+  spec -e world$                      Runs tests with names that end with \"world\"
+"
+}
+
+spec_harness="${BASH_SOURCE[0]/bin\/spec}private/specHarness"
+test_failed=
+fail_fast=
+name_matcher=
+matcher_is_next=
+spec_config=
+spec_config_is_next=
+print_only=
+explicitly_provided_paths=
+
+declare -a testFiles=()
+
+for arg in "$@"
+do
+  if [ "$spec_config_is_next" = "true" ]
+  then
+    spec_config_is_next=false
+    spec_config="$arg"
+  elif [ -f "$arg" ]
+  then
+    explicitly_provided_paths=true
+    testFiles+=("$arg")
+  elif [ "$arg" = "-f" ] || [ "$arg" = "--fast-fail" ] || [ "$arg" = "--fail-fast" ]
+  then
+    fail_fast=true
+  elif [ "$arg" = "-p" ] || [ "$arg" = "--print" ] || [ "$arg" = "--dry-run" ]
+  then
+    print_only=true
+  elif [ "$arg" = "-e" ] || [ "$arg" = "--pattern" ] || [ "$arg" = "--name" ]
+  then
+    matcher_is_next=true
+  elif [ "$matcher_is_next" = "true" ]
+  then
+    [ -n "$name_matcher" ] && { echo "spec currently only supports one -e matcher argument" >&2; exit 1; }
+    matcher_is_next=false
+    name_matcher="$arg"
+  elif [ "$arg" = "-c" ] || [ "$arg" = "--config" ]
+  then
+    spec_config_is_next=true
+  elif [ -d "$arg" ]
+  then
+    explicitly_provided_paths=true
+    while read -rd '' specFile
+    do
+      [ -f "$specFile" ] && testFiles+=("$specFile")
+    done < <( find "${arg%\/}" -type f -name "*.spec.sh" -print0 )
+  elif [ "$arg" = "-v" ] || [ "$arg" = "--version" ]
+  then
+    echo "spec version $SPEC_VERSION"
+    exit 0
+  elif [ "$arg" = "-h" ] || [ "$arg" = "--help" ]
+  then
+    print_help
+    exit 0
+  elif [ -n "$arg" ]
+  then
+    echo "Unsupported 'spec' argument: [$arg]" >&2
+    exit 1
+  fi
+done
+
+if [ "${#testFiles[@]}" -eq 0 ] && [ -z "$explicitly_provided_paths" ]
+then
+  while IFS= read -rd '' testFile
+  do
+    [ -f "$testFile" ] && testFiles+=("$testFile")
+  done < <(find . -type d -name packages -prune -o -type f \( -iname "*.spec.sh" -or -iname "*.test.sh" \) -print0)
+fi
+
+for filePath in "${testFiles[@]}"
+do
+  "$spec_harness" "$( dirname "$filePath" )" "$filePath" "$name_matcher" "$spec_config" "$print_only"
+  [ $? -ne 0 ] && test_failed=true
+  [ -n "$fail_fast" ] && [ -n "$test_failed" ] && { echo "Failed" >&2; exit 1; }
+done
+
+echo
+if [ "${#testFiles[@]}" -eq 0 ]
+then
+  echo "No specs found to run" >&2
+  exit 1
+elif [ -z "$test_failed" ]
+then
+  echo "Specs passed"
+  exit 0
+else
+  echo "Specs failed"
+  exit 1
+fi

@@ -1,0 +1,2 @@
+#! /usr/bin/env bash
+./scripts/compile-shx && docker run --rm -it -v "$PWD:/scripts" bash3257 bin/spec "$@"

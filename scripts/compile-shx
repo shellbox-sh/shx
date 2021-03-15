@@ -1,0 +1,2 @@
+#! /usr/bin/env bash
+./vendor/caseEsacCompiler compile shx shx.sh src/

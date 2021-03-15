@@ -1,0 +1,26 @@
+title: '<% shx %>'
+description: 'HTML in your Shell'
+theme: jekyll-theme-merlot
+markdown: kramdown
+show_downloads: true
+twitter_username: rebeccca_taylor
+github_username: beccasaurus
+highlighter: rouge
+
+baseurl: '' # the subpath of your site, e.g. /blog
+url: '' # the base hostname & protocol for your site, e.g. http://example.com
+
+github:
+  zip_url: https://github.com/shells-sh/mocks.sh/archive/TODO.zip
+  tar_url: https://github.com/shells-sh/mocks.sh/archive/TODO.tar.gz
+  owner_url: https://github.com/beccasaurus
+  owner_name: '@beccasaurus'
+
+defaults:
+  - values:
+      layout: default
+
+exclude:
+  - CNAME
+  - Gemfile
+  - Gemfile.lock

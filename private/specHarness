@@ -1,0 +1,27 @@
+#! /usr/bin/env bash
+
+___spec___SpecPrivateDirectory="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+SPEC_DIR="$1"
+SPEC_FILE="$2"
+SPEC_NAME_PATTERN="$3"
+[ -n "$SPEC_CONFIG"] && SPEC_CONFIG="$4"
+SPEC_PRINT_ONLY="$5"
+
+source "$___spec___SpecPrivateDirectory/specHarness.sh"
+
+spec.loadConfigs "$SPEC_DIR"
+spec.loadHelpers "$SPEC_DIR"
+
+spec.beforeFile "$SPEC_FILE"
+source "$SPEC_FILE"
+spec.afterFile "$SPEC_FILE"
+
+spec.loadSpecs
+
+if [ "$SPEC_PRINT_ONLY" = "true" ]
+then
+  spec.listSpecs
+else
+  spec.runSpecs
+fi

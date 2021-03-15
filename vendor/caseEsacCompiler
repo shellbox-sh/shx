@@ -1,0 +1,209 @@
+#! /usr/bin/env bash
+
+# TODO - don't expand \n from source files please :)
+
+## # `caseEsacCompiler.sh`
+##
+## Compile multiple .sh files into a single file with a single top-level
+## function and multiple commands and subcommands.
+##
+## - Every directory represents a `case`/`esac`
+## - Every `.sh` file represents a `case` option
+##
+## ## Usage
+##
+## ```sh
+## caseEsacCompiler compile myFunction output.sh my/dir/of/source/files/
+## ```
+##
+## If the source file contains this text anywhere, it will be replaced:
+##
+## | Text | Replacement |
+## |------|-------------|
+## | `CASE_COMMAND_ESAC` | This command name, e.g. for `myFunction foo bar` this will be `bar` |
+## | `CASE_FULL_COMMAND_ESAC` | The full command name, e.g. for `myFunction foo bar` this will be `myFunction foo bar` |
+## | `CASE_PARENT_COMMAND_ESAC` | The parent command name, e.g. for `myFunction foo bar` this will be `myFunction foo` |
+## | `CASE_FUNCTION_ESAC` | The top-level function name, e.g. for `myFunction foo bar` this will be `myFunction` |
+##
+caseEsacCompiler() {
+  case "$1" in
+
+    ## ## `caseEsacCompiler` `compile`
+    ##
+    ## | | Parameters |
+    ## |-|------------|
+    ## | `$1` | `compile` |
+    ## | `$2` | The name of the top-level function to generate. All subcommands will be run through this top-level function. |
+    ## | `$3` | The name of the source file to output. Will contain one function with any number of commands and subcommands. |
+    ## | `$4` | The root path of command files. Used to determine the depth of subcommands to generate. |
+    ## | `$5` | File containing source/text for the function header, if any. Default: `[root path]/.functionHeader.sh` |
+    ## | `$6` | File containing source/text for the function footer, if any. Default: `[root path]/.functionFooter.sh` |
+    ## | `$7` | File containing source/text for the file header, if any. Default: `[root path]/.fileHeader.sh` |
+    ## | `$8` | File containing source/text for the file footer, if any. Default: `[root path]/.fileFooter.sh` |
+    ##
+    compile)
+      local topLevelFunctionName="$2"
+      local outputFilePath="$3"
+      local commandFilesRootPath="$4"
+      local functionHeaderFilePath="$5"
+      local functionFooterFilePath="$6"
+      local fileHeaderFilePath="$7"
+      local fileFooterFilePath="$8"
+      [ -z "$functionHeaderFilePath" ] && [ -f "$commandFilesRootPath/.functionHeader.sh" ] && functionHeaderFilePath="$commandFilesRootPath/.functionHeader.sh"
+      [ -z "$functionFooterFilePath" ] && [ -f "$commandFilesRootPath/.functionFooter.sh" ] && functionFooterFilePath="$commandFilesRootPath/.functionFooter.sh"
+      [ -z "$fileHeaderFilePath" ] && [ -f "$commandFilesRootPath/.fileHeader.sh" ] && fileHeaderFilePath="$commandFilesRootPath/.fileHeader.sh"
+      [ -z "$fileFooterFilePath" ] && [ -f "$commandFilesRootPath/.fileFooter.sh" ] && fileFooterFilePath="$commandFilesRootPath/.fileFooter.sh"
+
+      # Go through the commands and, for each command, find its children and generate the text for them!
+      local sourceFileContent="#! /usr/bin/env bash
+"
+      [ -n "$fileHeaderFilePath" ] && [ -f "$fileHeaderFilePath" ] && sourceFileContent="${sourceFileContent}
+$(<"$fileHeaderFilePath")
+"
+      sourceFileContent="${sourceFileContent}
+$topLevelFunctionName() {
+  declare -a __${topLevelFunctionName}__mainCliCommands=(\"$topLevelFunctionName\")
+  declare -a __${topLevelFunctionName}__originalCliCommands=(\"\$@\")
+"
+      [ -n "$functionHeaderFilePath" ] && [ -f "$functionHeaderFilePath" ] && sourceFileContent="${sourceFileContent}
+$(<"$functionHeaderFilePath")
+"
+      sourceFileContent="${sourceFileContent}
+$( caseEsacCompiler _caseEsacForDir 1 "$commandFilesRootPath" "$commandFilesRootPath" "$topLevelFunctionName" )
+"
+      [ -n "$functionFooterFilePath" ] && [ -f "$functionFooterFilePath" ] && sourceFileContent="${sourceFileContent}
+$(<"$functionFooterFilePath")
+"
+      sourceFileContent="${sourceFileContent}
+}
+"
+      [ -n "$fileFooterFilePath" ] && [ -f "$fileFooterFilePath" ] && sourceFileContent="${sourceFileContent}
+$(<"$fileFooterFilePath")
+"
+      sourceFileContent="${sourceFileContent}
+[ \"\${BASH_SOURCE[0]}\" = \"\$0\" ] && \"$topLevelFunctionName\" \"\$@\"
+"
+      echo "$sourceFileContent" > "$outputFilePath"
+      ;;
+
+    ## ## `caseEsacCompiler` `_loadSourceFile`
+    ##
+    ## > 🕵️ Private
+    ##
+    ## Return the source code for the given source file (to put into this item's case/esac statement)
+    ##
+    ## | | Parameters |
+    ## |-|------------|
+    ## | `$1` | `_loadSourceFile` |
+    ## | `$2` | Full command name associated with this source file, e.g. `theFunction subCommand thisCommand` |
+    ## | `$3` | Full path to this source file |
+    ##
+    _loadSourceFile)
+      local fullCommandName="$2"
+      local commandName="${fullCommandName##* }"
+      local parentCommandName="${fullCommandName% *}"
+      local functionName="${fullCommandName%% *}"
+      local sourceFile="$3"
+
+      local sourceFileContent="$(<"$sourceFile")"
+      sourceFileContent="${sourceFileContent//CASE_COMMAND_ESAC/$commandName}"
+      sourceFileContent="${sourceFileContent//CASE_FULL_COMMAND_ESAC/$fullCommandName}"
+      sourceFileContent="${sourceFileContent//CASE_PARENT_COMMAND_ESAC/$parentCommandName}"
+      sourceFileContent="${sourceFileContent//CASE_FUNCTION_ESAC/$functionName}"
+      sourceFileContent="${sourceFileContent//FN/$functionName}"
+
+      if echo "$sourceFileContent" | head -1 | grep "() {" &>/dev/null
+      then
+        sourceFileContent="$( echo "$sourceFileContent" | tail -n +2 | head -n -1 )"
+      fi
+      
+      echo "$sourceFileContent"
+      ;;
+
+    ## ## `caseEsacCompiler` `_caseEsacForDir`
+    ##
+    ## > 🕵️ Private
+    ##
+    ## Generate and output the text for the case/esac code for the given directory of files:
+    ##
+    ## | | Parameters |
+    ## |-|------------|
+    ## | `$1` | `_caseEsacForDir` |
+    ## | `$2` | Number representing the depth of this command, where the top-level function depth is 1, the next subcommand depth is 2, and so on. |
+    ## | `$3` | The directory to search for files and folders to convert into `case`/`esac` cases and individiaul options. |
+    ## | `$4` | The root path of command files. Used to determine the depth of subcommands to generate. |
+    ## | `$5` | The name of the top-level function. |
+    ##
+    _caseEsacForDir)
+      local commandDepth="$2"
+      local commandsDirectoryPath="$3"
+      local rootCommandsDirectoryPath="$4"
+      local topLevelFunctionName="$5"
+      local indentation=""
+      local i=0
+      while [ $i -lt $commandDepth ]
+      do
+        indentation="$indentation  "
+        : $(( i++ ))
+      done
+      echo -e "${indentation}local __${topLevelFunctionName}__mainCliCommandDepth=\"$commandDepth\""
+      echo -e "${indentation}__${topLevelFunctionName}__mainCliCommands+=(\"\$1\")"
+      echo -e "${indentation}local __${topLevelFunctionName}__mainCliCommands_command${commandDepth}=\"\$1\""
+      echo -e "${indentation}shift"
+      shift
+      echo -e "${indentation}case \"\$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" in"
+      local commandFileOrSubcommandDirectory
+      for commandFileOrSubcommandDirectory in $commandsDirectoryPath/*
+      do
+        local fullCommandName="${commandFileOrSubcommandDirectory/"$rootCommandsDirectoryPath"}"
+        fullCommandName="${fullCommandName#/}"
+        fullCommandName="${fullCommandName%.sh}"
+        fullCommandName="$topLevelFunctionName ${fullCommandName//// }"
+
+        local commandName="${commandFileOrSubcommandDirectory##*/}"
+        commandName="${commandName%.sh}"
+        [ "$commandName" = "*" ] && continue
+        echo "${indentation}  \"$commandName\")"
+        if [ -d "$commandFileOrSubcommandDirectory" ]
+        then
+          caseEsacCompiler _caseEsacForDir "$(( $commandDepth + 1 ))" "$commandFileOrSubcommandDirectory" "$rootCommandsDirectoryPath" "$topLevelFunctionName" | sed "s/^/$indentation/"
+        elif [ -f "$commandFileOrSubcommandDirectory" ]
+        then
+          caseEsacCompiler _loadSourceFile "$fullCommandName" "$commandFileOrSubcommandDirectory" | sed "s/^/$indentation    /"
+        fi
+        echo -e "\n${indentation}      ;;"
+      done
+      echo "${indentation}  *)"
+      local subCommandName="${commandsDirectoryPath/"$rootCommandsDirectoryPath"}"
+      subCommandName="${subCommandName#/}"
+      subCommandName="${subCommandName//// }"
+      if [ $commandDepth = 1 ]
+      then
+        if [ -f "$commandsDirectoryPath/.index.sh" ]
+        then
+          caseEsacCompiler _loadSourceFile "$topLevelFunctionName" "$commandsDirectoryPath/.index.sh" | sed "s/^/$indentation    /"
+        else
+          echo "${indentation}    echo \"Unknown '$topLevelFunctionName' command: \$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" >&2"
+        fi
+      else
+        local subCommandFolder="${commandFileOrSubcommandDirectory%/*}"
+        if [ -f "$subCommandFolder/.index.sh" ]
+        then
+          caseEsacCompiler _loadSourceFile "$topLevelFunctionName $subCommandName" "$subCommandFolder/.index.sh" | sed "s/^/$indentation    /"
+        else
+          echo "${indentation}    echo \"Unknown '$topLevelFunctionName $subCommandName' command: \$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" >&2"
+          echo "${indentation}    return 1"
+        fi
+      fi
+      echo "${indentation}    ;;"
+      echo "${indentation}esac"
+      ;;
+
+    *)
+      echo "Unknown 'caseEsacCompiler' command: '$1'" >&2
+      return 1
+      ;;
+  esac
+}
+
+[ "${BASH_SOURCE[0]}" = "$0" ] && caseEsacCompiler "$@"
