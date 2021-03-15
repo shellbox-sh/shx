@@ -18,7 +18,7 @@
 </body>
 ```
 
-Simple rendering
+> Simple rendering
 
 ```sh
 source shx.sh
@@ -29,7 +29,7 @@ declare -a items=("Item A" "Item B")
 shx render index.html
 ```
 
-Output:
+> Output preview
 
  - Item A
  - Item B
