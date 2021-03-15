@@ -6,14 +6,14 @@
 <!-- index.html -->
 <html>
   <head>
-    <%= $title %>
+    <title><%= $title %></title>
   </head>
 </html>
 <body>
   <ul>
-    <% for item in "${items[@]}"; do %>
-      <li><%= $item %></li>
-    <% done %>
+  <% for item in "${items[@]}"; do %>
+  <li><%= $item %></li>
+  <% done %>
   </ul>
 </body>
 ```
@@ -33,5 +33,21 @@ shx render index.html
 
  - Item A
  - Item B
+
+> Output HTML
+
+```html
+<html>
+  <head>
+    <title>Hello, world!</title>
+  </head>
+</html>
+<body>
+  <ul>
+    <li>Item A</li>
+    <li>Item B</li>
+  </ul>
+</body>
+```
 
 ---
