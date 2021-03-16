@@ -3,7 +3,7 @@
 
 {% raw %}
 
-# <%= "shell script templates" %>
+# 📜 <%= _"shell script templates"_ %>
 
 > Simple, easy-to-use template rendering engine ( _written in BASH_ )
 

@@ -1,1 +1,1 @@
-echo "shx version 1.0.0"
+echo "shx version $SHX_VERSION"

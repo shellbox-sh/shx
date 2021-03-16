@@ -1,7 +1,7 @@
-echo 'shx version 1.0.0
-
-HTML in your Shell!
-https://shx.shellbox.sh
+echo "shx version $SHX_VERSION"
+echo '
+Shell Script Templates
+> https://shx.shellbox.sh
 
 `shx` is a minimal BASH template renderer:
 
