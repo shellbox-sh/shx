@@ -44,11 +44,6 @@ declare -a items=("Item A" "Item B")
 shx render index.shx
 ```
 
-> Output preview
-
- - Item A
- - Item B
-
 > Output HTML
 
 ```html
