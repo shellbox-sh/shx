@@ -1,4 +1,4 @@
-# HTML in your Shell
+# <% HTML in your Shell %>
 
 > Classic HTML templating
 
