@@ -1,13 +1,13 @@
-template='
-<html>
+template='<html>
   <head>
     <title><%= $title %></title>
   </head>
   <body>
     <ul>
-    <% for item in "$@"; do %>
+    <% for item in "$@"; do -%>
     <li><%= $item %></li>
-    <% done %></ul>
+    <% done -%>
+    </ul>
   </body>
 </html>
 '
@@ -23,7 +23,7 @@ expected='<html>
     <ul>
         <li>Hello</li>
         <li>World</li>
-    </ul>
+        </ul>
   </body>
 </html>'
 
@@ -39,9 +39,52 @@ expected='<html>
         <li>Foo</li>
         <li>Bar</li>
         <li>Baz</li>
-    </ul>
+        </ul>
   </body>
 </html>'
 
   expect { shx render "$template" "Foo" "Bar" "Baz" } toEqual "$expected"
+}
+
+@spec.another_example() {
+
+template='<%= $# %> arguments provided:
+<% for argument in "$@"; do %>- <%= $argument %>
+<% done %>'
+
+expected='3 arguments provided:
+- First
+- Second
+- Third'
+
+  expect { shx render "$template" "First" "Second" "Third" } toEqual "$expected"
+
+template='<%= $# %> arguments provided:
+<% for argument in "$@"; do %>
+- <%= $argument %>
+<% done %>'
+
+expected='3 arguments provided:
+
+- First
+
+- Second
+
+- Third'
+
+  shx render --code "$template" "First" "Second" "Third"
+
+  expect { shx render "$template" "First" "Second" "Third" } toEqual "$expected"
+
+template='<%= $# %> arguments provided:
+<% for argument in "$@"; do -%>
+- <%= $argument %>
+<% done %>'
+
+expected='3 arguments provided:
+- First
+- Second
+- Third'
+
+  expect { shx render "$template" "First" "Second" "Third" } toEqual "$expected"
 }

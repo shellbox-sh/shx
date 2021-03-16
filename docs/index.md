@@ -3,7 +3,7 @@
 
 {% raw %}
 
-# <% Shell Templates %>
+# <%= "shell script templates" %>
 
 > Simple, easy-to-use template rendering engine ( _written in BASH_ )
 
@@ -15,7 +15,9 @@ curl -o- https://shx.shellbox.sh/installer.sh | bash
 
 ---
 
-> Classic HTML templating
+## 🏛️ Classic syntax
+
+`shx` provides a well-known, friendly `<%`-style syntax:
 
 ```erb
 <!-- index.shx -->
@@ -23,75 +25,108 @@ curl -o- https://shx.shellbox.sh/installer.sh | bash
   <head>
     <%= $title %>
   </head>
+  <body>
+    <h1><%= $header %></h1>
+    <ul>
+      <% for item in "${items[@]}"; do %>
+        <li><%= $item %></li>
+      <% done %>
+    </ul>
+  </body>
 </html>
-<body>
-  <ul>
-    <% for item in "${items[@]}"; do %>
-    <li><%= $item %></li>
-    <% done %>
-  </ul>
-</body>
 ```
 
-> Simple rendering
+## 💬 Render a string
+
+Provide a simple string to `shx render "[my template]"`:
 
 ```sh
-source shx.sh
+$ export text="Hello, world!"
 
-title="My Website"
-declare -a items=("Item A" "Item B")
-
-shx render index.shx
-```
-
-> Output HTML
-
-```html
-<html>
-  <head>
-    <title>Hello, world!</title>
-  </head>
-</html>
-<body>
-  <ul>
-    <li>Item A</li>
-    <li>Item B</li>
-  </ul>
-</body>
-```
-
-> Provide command-line arguments
-
-```erb
-<h1><%= $1 %><% shift %></h1>
-<ul>
-  <% for item in "$@"; do %>
-  <li><%= $item %></li>
-  <% done %>
-</ul>
-```
-
-```sh
-shx render index.shx "My Title" "Hello" "World"
-```
-
-```html
-<h1>My Title</h1>
-<ul>
-  <li>Hello</li>
-  <li>World</li>
-</ul>
-```
-
-> Render simple strings
-
-```sh
-shx render '<h1><%= $1 %></h1>' "Hello, world!"
+$ ./shx render "<h1><%= $text %></h1>"
 ```
 
 ```html
 <h1>Hello, world!</h1>
 ```
+
+## 💾 Render a file
+
+Provide a file path to `shx render "[path to file]"`:
+
+```erb
+<!-- index.shx -->
+<h1><%= $title %></h1>
+```
+
+```sh
+$ export title="My Website"
+
+$ ./shx render index.shx
+```
+
+```html
+<h1>Hello, world!</h1>
+```
+
+## 📚 Use as a library
+
+Give `shx` visibility into your script's variables without `export`:
+
+```sh
+source shx.sh
+
+title="Regular variable"
+
+shx render "Title: <%= $title %>"
+```
+
+```
+Title: Regular variable
+```
+
+Including access to function `local` variables:
+
+```sh
+source shx.sh
+
+renderTemplate() {
+  local greeting="$1"
+  local name="$2"
+  shx render "<%= $greeting %>, <%= $name %>!"
+}
+
+renderTemplate "Hello" "Rebecca"
+```
+
+```
+Hello, Rebecca!
+```
+
+## 📎 Accepts argument list
+
+You can provide arguments after `shx render [template]` which become available via the usual means, e.g. `$*` `$@` `$#` `$1` `$2` `$3` etc
+
+```erb
+<!-- template.shx -->
+<%= $# %> arguments provided:
+<% for argument in "$@"; do -%>
+- <%= $argument %>
+<% done %>
+```
+
+```sh
+./shx render template.shx "First" "Second" "Third"
+```
+
+```
+3 arguments provided:
+- First
+- Second
+- Third
+```
+
+> ℹ️ Using `-%>` prevents the character following `-%>` from being output (_e.g. in this case a newline character_)
 
 ---
 

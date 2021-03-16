@@ -4,8 +4,9 @@
   </head>
   <body>
     <ul>
-    <% for item in "${items[@]}"; do %>
+    <% for item in "${items[@]}"; do -%>
     <li><%= $item %></li>
-    <% done %></ul>
+    <% done -%>
+    </ul>
   </body>
 </html>

@@ -10,6 +10,10 @@ shx() {
   shift
   case "$__shx__mainCliCommands_command1" in
     "render")
+      # Undocumented option, get the code for the template without evaluating it: --code
+      local __shx__printCodeOnly=false
+      [ "$1" = "--code" ] && { __shx__printCodeOnly=true; shift; }
+      
       # Shift so that templates can properly read in provided "$1" "$@" etc to the `render` function
       local __shx__providedTemplate="$1"; shift
       
@@ -49,6 +53,25 @@ shx() {
           __shx__codeBlockDefinitionOpen=true
           __shx__stringBuilderComplete=true
           : "$(( __shx__cursor++ ))"
+        elif [ "${__shx__providedTemplate:$__shx__cursor:3}" = "-%>" ]
+        then
+          if [ "$__shx__valueBlockOpen" = true ]
+          then
+            __shx__valueBlockOpen=false
+            __shx__valueBlock="${__shx__valueBlock# }"
+            __shx__outputScriptToEval+="\nprintf '%%s' \"${__shx__valueBlock% }\"\n"
+            __shx__valueBlock=''
+          elif [ "$__shx__codeBlockDefinitionOpen" = true ]
+          then
+            __shx__codeBlockDefinitionOpen=false
+            __shx__codeBlockDefinition="${__shx__codeBlockDefinition# }"
+            __shx__outputScriptToEval+="\n${__shx__codeBlockDefinition% }\n"
+            __shx__codeBlockDefinition=''
+          else
+            echo "shx [RenderError] unexpected %> encountered, no <% or <%= blocks are currently open" >&2
+            return 1
+          fi
+          : "$(( __shx__cursor += 3 ))"
         elif [ "${__shx__providedTemplate:$__shx__cursor:2}" = "%>" ]
         then
           if [ "$__shx__valueBlockOpen" = true ]
@@ -81,13 +104,16 @@ shx() {
         if [ "$__shx__stringBuilderComplete" = true ]
         then
           __shx__stringBuilderComplete=false
-          : "$(( __shx__heredocCount++ ))"
-          __shx__outputScriptToEval+="\nIFS=\$'\\n' read -r -d '' __SHX_HEREDOC_$__shx__heredocCount<< 'SHX_PRINT_BLOCK'\n"
-          __shx__outputScriptToEval+="$__shx__stringBuilder"
-          __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
-          __shx__outputScriptToEval+="\nprintf '%%s' \"\$__SHX_HEREDOC_$__shx__heredocCount\""
-          __shx__outputScriptToEval+="\nunset __SHX_HEREDOC_$__shx__heredocCount"
-          __shx__stringBuilder=''
+          if [ -n "$__shx__stringBuilder" ]
+          then
+            : "$(( __shx__heredocCount++ ))"
+            __shx__outputScriptToEval+="\nIFS= read -r -d '' __SHX_HEREDOC_$__shx__heredocCount<< 'SHX_PRINT_BLOCK'\n"
+            __shx__outputScriptToEval+="$__shx__stringBuilder"
+            __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
+            __shx__outputScriptToEval+="\nprintf '%%s' \"\${__SHX_HEREDOC_$__shx__heredocCount%%\"\n\"}\""
+            __shx__outputScriptToEval+="\nunset __SHX_HEREDOC_$__shx__heredocCount"
+            __shx__stringBuilder=''
+          fi
         fi
       
         : "$(( __shx__cursor++ ))"
@@ -95,10 +121,10 @@ shx() {
       
       if [ -n "$__shx__stringBuilder" ]
       then
-          __shx__outputScriptToEval+="\nIFS=\$'\\n' read -r -d '' __SHX_HEREDOC_$__shx__heredocCount<< 'SHX_PRINT_BLOCK'\n"
+          __shx__outputScriptToEval+="\nIFS= read -r -d '' __SHX_HEREDOC_$__shx__heredocCount<< 'SHX_PRINT_BLOCK'\n"
         __shx__outputScriptToEval+="$__shx__stringBuilder"
         __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
-        __shx__outputScriptToEval+="\nprintf '%%s' \"\$__SHX_HEREDOC_$__shx__heredocCount\""
+        __shx__outputScriptToEval+="\nprintf '%%s' \"\${__SHX_HEREDOC_$__shx__heredocCount%%\"\n\"}\""
         __shx__outputScriptToEval+="\nunset \__SHX_HEREDOC_$__shx__heredocCount"
         __shx__stringBuilder=''
       fi
@@ -107,6 +133,12 @@ shx() {
       [ "$__shx__valueBlockOpen" = true ] && { echo "shx [RenderError] <%= was not closed: '$__shx__valueBlock'" >&2; return 1; }
       
       local readyToEval="$( printf -- "$__shx__outputScriptToEval" )"
+      
+      if [ "$__shx__printCodeOnly" = true ]
+      then
+        echo "$readyToEval"
+        return 0
+      fi
       
       unset __shx__cursor
       unset __shx__outputScriptToEval
@@ -117,6 +149,7 @@ shx() {
       unset __shx__codeBlockDefinition
       unset __shx__codeBlockDefinitionOpen
       unset __shx__heredocCount
+      unset __shx__printCodeOnly
       
       eval "$readyToEval"
 

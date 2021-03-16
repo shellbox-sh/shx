@@ -1,5 +1,5 @@
 title: '<% shx %>'
-description: 'HTML in your Shell'
+description: 'Shell Templates'
 theme: jekyll-theme-merlot
 markdown: kramdown
 show_downloads: true

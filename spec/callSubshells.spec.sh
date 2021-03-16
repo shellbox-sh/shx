@@ -1,7 +1,6 @@
 title="Hello, world!"
 
-template='
-<html>
+template='<html>
   <head>
     <title><%= $title %></title>
   </head>
@@ -20,8 +19,10 @@ expected='<html>
   </head>
   <body>
     <ul>
-        <li>barFile</li>
-        <li>fooFile</li>
+    
+    <li>barFile</li>
+    
+    <li>fooFile</li>
     </ul>
   </body>
 </html>'

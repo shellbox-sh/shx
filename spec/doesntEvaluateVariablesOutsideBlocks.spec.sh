@@ -3,6 +3,7 @@ items=("Item A" "Item B")
 
 template='<html>
   <head>
+    $title is not evaluated
     <title><%= $title %></title>
   </head>
   <body>
@@ -12,12 +13,14 @@ template='<html>
     <% done -%>
     </ul>
   </body>
+  Also $# and $@ and $items and ${items[@]}
 </html>
 '
 
 @spec.hello_world() {
 expected='<html>
   <head>
+    $title is not evaluated
     <title>Hello, world!</title>
   </head>
   <body>
@@ -26,27 +29,8 @@ expected='<html>
         <li>Item B</li>
         </ul>
   </body>
+  Also $# and $@ and $items and ${items[@]}
 </html>'
 
   expect { shx render "$template" } toEqual "$expected"
-}
-
-@spec.hello_world.fromFile() {
-expected='<html>
-  <head>
-    <title>Hello, world!</title>
-  </head>
-  <body>
-    <ul>
-        <li>Item A</li>
-        <li>Item B</li>
-        </ul>
-  </body>
-</html>'
-
-  expect { shx render "${BASH_SOURCE[0]%/*}/helloWorld.shx" } toEqual "$expected"
-}
-
-@spec.hello_world.simple_string() {
-  expect { shx render '<h1><%= $1 %></h1>' "Hello" } toEqual "<h1>Hello</h1>"
 }
