@@ -6,14 +6,14 @@
 <!-- index.shx -->
 <html>
   <head>
-    <title><%= $title %></title>
+    <%= $title %>
   </head>
 </html>
 <body>
   <ul>
-  <% for item in "${items[@]}"; do %>
-  <li><%= $item %></li>
-  <% done %>
+    <% for item in "${items[@]}"; do %>
+    <li><%= $item %></li>
+    <% done %>
   </ul>
 </body>
 ```
@@ -48,6 +48,39 @@ shx render index.shx
     <li>Item B</li>
   </ul>
 </body>
+```
+
+> Provide command-line arguments
+
+```erb
+<h1><%= $1 %><% shift %></h1>
+<ul>
+  <% for item in "$@"; do %>
+  <li><%= $item %></li>
+  <% done %>
+</ul>
+```
+
+```sh
+shx render index.shx "My Title" "Hello" "World"
+```
+
+```html
+<h1>My Title</h1>
+<ul>
+  <li>Hello</li>
+  <li>World</li>
+</ul>
+```
+
+> Render simple strings
+
+```sh
+shx render '<h1><%= $1 %></h1>' "Hello, world!"
+```
+
+```html
+<h1>Hello, world!</h1>
 ```
 
 ---

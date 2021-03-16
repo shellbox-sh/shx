@@ -3,6 +3,16 @@
 
 {% raw %}
 
+# <% Shell Templates %>
+
+> Simple, easy-to-use template rendering engine ( _written in BASH_ )
+
+Download the [latest version](https://github.com/shellbox-sh/shx/archive/v0.1.0.tar.gz) by clicking one of the download links above or:
+
+```sh
+curl -o- https://shx.shellbox.sh/installer.sh | bash
+```
+
 ---
 
 > Classic HTML templating
@@ -55,15 +65,38 @@ shx render index.shx
 </body>
 ```
 
+> Provide command-line arguments
 
----
-
-Download the [latest version](https://github.com/shellbox-sh/shx/archive/v0.1.0.tar.gz) by clicking one of the download links above or:
-
-```sh
-curl -o- https://shx.shellbox.sh/installer.sh | bash
+```erb
+<h1><%= $1 %><% shift %></h1>
+<ul>
+  <% for item in "$@"; do %>
+  <li><%= $item %></li>
+  <% done %>
+</ul>
 ```
 
+```sh
+shx render index.shx "My Title" "Hello" "World"
+```
+
+```html
+<h1>My Title</h1>
+<ul>
+  <li>Hello</li>
+  <li>World</li>
+</ul>
+```
+
+> Render simple strings
+
+```sh
+shx render '<h1><%= $1 %></h1>' "Hello, world!"
+```
+
+```html
+<h1>Hello, world!</h1>
+```
 
 ---
 

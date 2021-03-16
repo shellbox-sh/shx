@@ -201,10 +201,6 @@ Syntax Highlighting:
   Name shx templates using a .erb or .asp or similar file extension
   for best syntax highlighting experience in your preferred text editor
   -or- configure .shx to use one of these syntax highlighers.
-
-View https://shx.shellbox.sh for more details
-
-GitHub: https://github.com/shellbox-sh/shx
 '
       ;;
   esac
