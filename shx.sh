@@ -23,16 +23,12 @@ shx() {
       # This is _not_ a side-effect-free/safe templating engine a la Liquid and friends
       #
       local __shx__outputScriptToEval=''
-      
       local __shx__stringBuilder=''
       local __shx__stringBuilderComplete=false
-      
       local __shx__valueBlock=''
       local __shx__valueBlockOpen=false
-      
       local __shx__codeBlockDefinition=''
       local __shx__codeBlockDefinitionOpen=false
-      
       local __shx__heredocCount=0
       
       # We legit loop thru all the characters.
@@ -90,6 +86,7 @@ shx() {
           __shx__outputScriptToEval+="$__shx__stringBuilder"
           __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
           __shx__outputScriptToEval+="\nprintf '%%s' \"\$__SHX_HEREDOC_$__shx__heredocCount\""
+          __shx__outputScriptToEval+="\nunset __SHX_HEREDOC_$__shx__heredocCount"
           __shx__stringBuilder=''
         fi
       
@@ -102,15 +99,26 @@ shx() {
         __shx__outputScriptToEval+="$__shx__stringBuilder"
         __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
         __shx__outputScriptToEval+="\nprintf '%%s' \"\$__SHX_HEREDOC_$__shx__heredocCount\""
+        __shx__outputScriptToEval+="\nunset \__SHX_HEREDOC_$__shx__heredocCount"
         __shx__stringBuilder=''
       fi
       
       [ "$__shx__codeBlockDefinitionOpen" = true ] && { echo "shx [RenderError] <% block was not closed: '$__shx__codeBlockDefinition'" >&2; return 1; }
       [ "$__shx__valueBlockOpen" = true ] && { echo "shx [RenderError] <%= was not closed: '$__shx__valueBlock'" >&2; return 1; }
       
-      local __shx__readyToEval="$( printf -- "$__shx__outputScriptToEval" )"
+      local readyToEval="$( printf -- "$__shx__outputScriptToEval" )"
       
-      eval "$__shx__readyToEval"
+      unset __shx__cursor
+      unset __shx__outputScriptToEval
+      unset __shx__stringBuilder
+      unset __shx__stringBuilderComplete
+      unset __shx__valueBlock
+      unset __shx__valueBlockOpen
+      unset __shx__codeBlockDefinition
+      unset __shx__codeBlockDefinitionOpen
+      unset __shx__heredocCount
+      
+      eval "$readyToEval"
 
         ;;
     "--version")
