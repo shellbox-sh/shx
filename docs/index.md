@@ -8,7 +8,7 @@
 > Classic HTML templating
 
 ```erb
-<!-- index.html -->
+<!-- index.shx -->
 <html>
   <head>
     <%= $title %>
@@ -31,7 +31,7 @@ source shx.sh
 title="My Website"
 declare -a items=("Item A" "Item B")
 
-shx render index.html
+shx render index.shx
 ```
 
 > Output preview
