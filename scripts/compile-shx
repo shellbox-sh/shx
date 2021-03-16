@@ -1,2 +1,8 @@
 #! /usr/bin/env bash
+
+# library
 ./vendor/caseEsacCompiler compile shx shx.sh src/
+
+# and a 'binary' version
+./vendor/caseEsacCompiler compile shx shx src/
+chmod +x shx

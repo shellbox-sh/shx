@@ -28,5 +28,5 @@ expected='<html>
   </body>
 </html>'
 
-  expect { shx render "$template" } toFail "syntax error near unexpected token `do'"
+  expect { shx render "$template" } toFail "syntax error near unexpected token \`do'"
 }

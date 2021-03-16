@@ -1,0 +1,11 @@
+<html>
+  <head>
+    <title><%= $title %></title>
+  </head>
+  <body>
+    <ul>
+    <% for item in "${items[@]}"; do %>
+    <li><%= $item %></li>
+    <% done %></ul>
+  </body>
+</html>

@@ -181,7 +181,7 @@ $(<"$fileFooterFilePath")
       then
         if [ -f "$commandsDirectoryPath/.index.sh" ]
         then
-          caseEsacCompiler _loadSourceFile "$topLevelFunctionName" "$commandsDirectoryPath/.index.sh" | sed "s/^/$indentation    /"
+          caseEsacCompiler _loadSourceFile "$topLevelFunctionName" "$commandsDirectoryPath/.index.sh"
         else
           echo "${indentation}    echo \"Unknown '$topLevelFunctionName' command: \$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" >&2"
         fi
@@ -189,7 +189,7 @@ $(<"$fileFooterFilePath")
         local subCommandFolder="${commandFileOrSubcommandDirectory%/*}"
         if [ -f "$subCommandFolder/.index.sh" ]
         then
-          caseEsacCompiler _loadSourceFile "$topLevelFunctionName $subCommandName" "$subCommandFolder/.index.sh" | sed "s/^/$indentation    /"
+          caseEsacCompiler _loadSourceFile "$topLevelFunctionName $subCommandName" "$subCommandFolder/.index.sh"
         else
           echo "${indentation}    echo \"Unknown '$topLevelFunctionName $subCommandName' command: \$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" >&2"
           echo "${indentation}    return 1"

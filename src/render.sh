@@ -1,6 +1,8 @@
 # Shift so that templates can properly read in provided "$1" "$@" etc to the `render` function
 local __shx__providedTemplate="$1"; shift
 
+[ -f "$__shx__providedTemplate" ] && __shx__providedTemplate="$(<"$__shx__providedTemplate")"
+
 # Like most similar implementations across programming languages,
 # the template render process builds up a script with lots of printf
 # statements alongside the <% shell source %> code to run and
