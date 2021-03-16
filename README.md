@@ -1,5 +1,9 @@
 # <% HTML in your Shell %>
 
+> Simple, easy-to-use template rendering engine ( _written in BASH_ )
+
+---
+
 > Classic HTML templating
 
 ```erb
