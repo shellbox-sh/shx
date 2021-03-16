@@ -7,7 +7,7 @@
 
 > Simple, easy-to-use template rendering engine ( _written in BASH_ )
 
-Download the [latest version](https://github.com/shellbox-sh/shx/archive/v0.1.0.tar.gz) by clicking one of the download links above or:
+Download the [latest version](https://github.com/shellbox-sh/shx/archive/v1.0.0.tar.gz) by clicking one of the download links above or:
 
 ```sh
 curl -o- https://shx.shellbox.sh/installer.sh | bash

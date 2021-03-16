@@ -11,8 +11,8 @@ baseurl: '' # the subpath of your site, e.g. /blog
 url: '' # the base hostname & protocol for your site, e.g. http://example.com
 
 github:
-  zip_url: https://github.com/shells-sh/mocks.sh/archive/TODO.zip
-  tar_url: https://github.com/shells-sh/mocks.sh/archive/TODO.tar.gz
+  zip_url: https://github.com/shellbox-sh/shx/archive/v1.0.0.zip
+  tar_url: https://github.com/shellbox-sh/shx/archive/v1.0.0.tar.gz
   owner_url: https://github.com/beccasaurus
   owner_name: '@beccasaurus'
 
