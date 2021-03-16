@@ -1,5 +1,4 @@
 title="Hello, world!"
-items=("Item A" "Item B")
 
 template='
 <html>
@@ -8,12 +7,11 @@ template='
   </head>
   <body>
     <ul>
-    <% for item in "${items[@]}"; do %>
+    <% for item in `ls $dir`; do %>
     <li><%= $item %></li>
     <% done %></ul>
   </body>
-</html>
-'
+</html>'
 
 @spec.helloWorld() {
 expected='<html>
@@ -22,11 +20,15 @@ expected='<html>
   </head>
   <body>
     <ul>
-        <li>Item A</li>
-        <li>Item B</li>
+        <li>barFile</li>
+        <li>fooFile</li>
     </ul>
   </body>
 </html>'
+
+  local dir="$( mktemp -d )"
+  touch "$dir/barFile"
+  touch "$dir/fooFile"
 
   expect { shx render "$template" } toEqual "$expected"
 }

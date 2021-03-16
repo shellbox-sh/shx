@@ -1,24 +1,5 @@
-# If "--code" provided, we'll show the code instead of evaluating it.
-#
-# Interestingly, `shx` uses this to call itself to get the code to evaluate.
-#
-# This helps to get it formatted in a happy way which `eval` seems to like.
-#
-local __shx__showCode=false
-[ "$1" == "--code" ] && { __shx__showCode=true; shift; }
-
 # Shift so that templates can properly read in provided "$1" "$@" etc to the `render` function
 local __shx__providedTemplate="$1"; shift
-
-if ! [ "$__shx__showCode" = true ]
-then
-  local renderedOutput=''
-  local renderedReturnCode=''
-  renderedOutput="$( eval "$( FN render --code "$__shx__providedTemplate" "$@" )" 2>&1 )"
-  renderedReturnCode=$?
-  echo "$renderedOutput"
-  return $renderedReturnCode
-fi
 
 # Like most similar implementations across programming languages,
 # the template render process builds up a script with lots of printf
@@ -46,13 +27,15 @@ while [ "$__shx__cursor" -lt "${#__shx__providedTemplate}" ]
 do
   if [ "${__shx__providedTemplate:$__shx__cursor:3}" = "<%=" ]
   then
+    [ "$__shx__codeBlockDefinitionOpen" = true ] && { echo "FN [RenderError] <%= was started but there is a <% block already open with content: '$__shx__codeBlockDefinition'" >&2; return 1; }
+    [ "$__shx__valueBlockOpen" = true ] && { echo "FN [RenderError] <%= was started but there is another <%= already open with content: '$__shx__valueBlock'" >&2; return 1; }
     __shx__valueBlockOpen=true
     __shx__stringBuilderComplete=true
     : "$(( __shx__cursor += 2 ))"
   elif [ "${__shx__providedTemplate:$__shx__cursor:2}" = "<%" ]
   then
     [ "$__shx__codeBlockDefinitionOpen" = true ] && { echo "FN [RenderError] %> block was closed but there is another <% currently open with content: '$__shx__codeBlockDefinition'" >&2; return 1; }
-    # [ "$__shx__valueBlockOpen" = true ] && 
+    [ "$__shx__valueBlockOpen" = true ] && { echo "FN [RenderError] %> block was closed but there is a <%= currently open with content: '$__shx__valueBlock'" >&2; return 1; }
     __shx__codeBlockDefinitionOpen=true
     __shx__stringBuilderComplete=true
     : "$(( __shx__cursor++ ))"
@@ -71,7 +54,7 @@ do
       __shx__outputScriptToEval+="\n${__shx__codeBlockDefinition% }\n"
       __shx__codeBlockDefinition=''
     else
-      echo "Unexpected %>"
+      echo "FN [RenderError] unexpected %> encountered, no <% or <%= blocks are currently open" >&2
       return 1
     fi
     : "$(( __shx__cursor++ ))"
@@ -108,4 +91,9 @@ then
   __shx__stringBuilder=''
 fi
 
-printf -- "$__shx__outputScriptToEval"
+[ "$__shx__codeBlockDefinitionOpen" = true ] && { echo "FN [RenderError] <% block was not closed: '$__shx__codeBlockDefinition'" >&2; return 1; }
+[ "$__shx__valueBlockOpen" = true ] && { echo "FN [RenderError] <%= was not closed: '$__shx__valueBlock'" >&2; return 1; }
+
+local __shx__readyToEval="$( printf -- "$__shx__outputScriptToEval" )"
+
+eval "$__shx__readyToEval"

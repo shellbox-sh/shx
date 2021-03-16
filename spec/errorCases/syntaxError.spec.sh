@@ -8,14 +8,14 @@ template='
   </head>
   <body>
     <ul>
-    <% for item in "${items[@]}"; do %>
+    <% forrrrr local xxxx; do %>
     <li><%= $item %></li>
     <% done %></ul>
   </body>
 </html>
 '
 
-@spec.helloWorld() {
+@spec.syntax_error() {
 expected='<html>
   <head>
     <title>Hello, world!</title>
@@ -28,5 +28,5 @@ expected='<html>
   </body>
 </html>'
 
-  expect { shx render "$template" } toEqual "$expected"
+  expect { shx render "$template" } toFail "syntax error near unexpected token `do'"
 }
