@@ -16,6 +16,14 @@ shx() {
   local __shx__mainCliCommands_command1="$1"
   shift
   case "$__shx__mainCliCommands_command1" in
+    "--version")
+    ## @command shx --version
+      ## Displays the current version of `shx.sh`
+      
+      echo "shx version $SHX_VERSION"
+    ## @
+
+        ;;
     "compile")
     ## @command shx compile
       ## @param $1 Template to compile (_string or path to file_)<br><br>
@@ -239,10 +247,9 @@ shx() {
       #
       # Begin Cache Lookup
       #
+      local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
       if [ -f "$__shx__providedTemplate" ] && [ "$SHX_CACHE" = true ]
       then
-        local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
-      
         # Build up the new cache lookup field (may have MTIME file changes)
         declare -a __shx__cacheLookupIndex=()
       
@@ -457,14 +464,6 @@ shx() {
       unset __shx__cacheUpdatedEncodedItem
       
       eval "$__shx__COMPILED_TEMPLATE"
-    ## @
-
-        ;;
-    "--version")
-    ## @command shx --version
-      ## Displays the current version of `shx.sh`
-      
-      echo "shx version $SHX_VERSION"
     ## @
 
         ;;

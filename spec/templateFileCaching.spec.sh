@@ -14,8 +14,7 @@
   local templateFile="$( mktemp )"
   echo 'Hello <%= $1 %>' > "$templateFile"
 
-  # expect { shx render "$templateFile" "Rebecca" } toEqual "Hello Rebecca"
-  shx render "$templateFile" "Rebecca" >/dev/null
+  expect { shx render "$templateFile" "Rebecca" } toEqual "Hello Rebecca"
 
   expect "${#_SHX_TEMPLATE_FILE_CACHE[@]}" toEqual 2
   expect "${_SHX_TEMPLATE_FILE_CACHE[0]}" toContain "$templateFile"
@@ -27,10 +26,12 @@
   # Let's update the file
   # We should get the new result
 
-  sleep 1
+  sleep 2
   echo 'Hello <%= $1 %>, template was updated' > "$templateFile"
+  local mtimeBeforeUpdate="$( date +%s -r "$templateFile" 2>/dev/null || stat -x "$templateFile" | grep "Modify" )"
 
-  expect { shx render "$templateFile" "Rebecca" } toEqual "Hello Rebecca, template was updated"
+  # expect { shx render "$templateFile" "Rebecca" } toEqual "Hello Rebecca, template was updated"
+  shx render "$templateFile" "Rebecca"
 
   expect "${#_SHX_TEMPLATE_FILE_CACHE[@]}" toEqual 2
   expect "${_SHX_TEMPLATE_FILE_CACHE[0]}" toContain "$templateFile"
@@ -38,7 +39,6 @@
   expect "${_SHX_TEMPLATE_FILE_CACHE[1]}" not toContain "Rebecca" # Doesn't save the result of the eval
 
   # Simply do it again
-  shx render "$templateFile" "Rebecca"
   expect { shx render "$templateFile" "Rebecca" } toEqual "Hello Rebecca, template was updated"
 
   expect "${#_SHX_TEMPLATE_FILE_CACHE[@]}" toEqual 2
@@ -48,13 +48,13 @@
 
   # NOW, let's update it. But trick the cache into thinking it's up-to-date
 
-  local mtimeBeforeUpdate="$( date +%s -r "$templateFile" 2>/dev/null || stat -x "$templateFile" | grep "Modify" )"
-  sleep 1
+  sleep 2
   echo 'Hello <%= $1 %>, template was updated AGAIN' > "$templateFile"
   local mtimeAfterUpdate="$( date +%s -r "$templateFile" 2>/dev/null || stat -x "$templateFile" | grep "Modify" )"
 
   # Go into the cache and update old to new
-  _SHX_TEMPLATE_FILE_CACHE[0]="${_SHX_TEMPLATE_FILE_CACHE[0]/"$mtimeBeforeUpdate"/"$mtimeAfterUpdate"}"
+
+  _SHX_TEMPLATE_FILE_CACHE[0]="${_SHX_TEMPLATE_FILE_CACHE[0]/$mtimeBeforeUpdate/$mtimeAfterUpdate}"
 
   expect { shx render "$templateFile" "Rebecca" } toEqual "Hello Rebecca, template was updated"
 

@@ -20,10 +20,9 @@ local __shx__providedTemplate="$__shx__originalTemplateArgument"
 #
 # Begin Cache Lookup
 #
+local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
 if [ -f "$__shx__providedTemplate" ] && [ "$SHX_CACHE" = true ]
 then
-  local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
-
   # Build up the new cache lookup field (may have MTIME file changes)
   declare -a __shx__cacheLookupIndex=()
 
