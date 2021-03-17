@@ -22,7 +22,6 @@ generateWebsiteIndex() {
   cp docs/_templates/websiteHeader.md docs/index.md
   cat docs/_templates/index.md >> docs/index.md
   echo "$commandReference" >> docs/index.md
-  cat docs/_templates/websiteFooter.md >> docs/index.md
 }
 
 generateREADME() {
