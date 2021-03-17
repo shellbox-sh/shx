@@ -51,7 +51,7 @@ then
       if [ "$__shx__currentTemplateFileMtime" = "$__shx__cacheEncodedItem_mtime" ]
       then
         # Equal! Just eval the previously compiled template
-        eval "${_SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]}" && return $?
+        eval "${_SHX_COMPILED_TEMPLATE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]}" && return $?
       else
         # Present but not equal, note to update it via its index
         # Update the item with the new MTIME
@@ -65,10 +65,10 @@ then
     else
       __shx__cacheLookupIndex+=("$__shx__cacheEncodedItem\n")
     fi
-  done < <( printf "${_SHX_TEMPLATE_FILE_CACHE[0]}" )
+  done < <( printf "${_SHX_COMPILED_TEMPLATE_CACHE[0]}" )
 
   # Update the cache index
-  _SHX_TEMPLATE_FILE_CACHE[0]="${__shx__cacheLookupIndex[*]}"
+  _SHX_COMPILED_TEMPLATE_CACHE[0]="${__shx__cacheLookupIndex[*]}"
 
   # If no template was found and eval'd and returned from the cache, grab a new one from the filesystem
   __shx__providedTemplate="$(<"$__shx__providedTemplate")"
@@ -204,13 +204,13 @@ if [ -f "$__shx__originalTemplateArgument" ] && [ "$SHX_CACHE" = true ]
 then
   if [ -n "$__shx__cacheEncodedItem_indexOfCompiledTemplate" ] # Existing item in the cache to update
   then
-    _SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
+    _SHX_COMPILED_TEMPLATE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
   else
     # Add a new item
     local __shx__actualMtime="$( date +"%s" -r "$__shx__originalTemplateArgument" 2>/dev/null || stat -x "$__shx__originalTemplateArgument" | grep "Modify" )"
-    local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
-    _SHX_TEMPLATE_FILE_CACHE[0]+="$__shx__itemIndexLine\n"
-    _SHX_TEMPLATE_FILE_CACHE+=("$__shx__COMPILED_TEMPLATE")
+    local __shx__itemIndexLine="${#_SHX_COMPILED_TEMPLATE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
+    _SHX_COMPILED_TEMPLATE_CACHE[0]+="$__shx__itemIndexLine\n"
+    _SHX_COMPILED_TEMPLATE_CACHE+=("$__shx__COMPILED_TEMPLATE")
   fi
 fi
 

@@ -126,6 +126,30 @@ You can provide arguments after `shx render [template]` which become available v
 
 > ℹ️ Using `-%>` prevents the character following `-%>` from being output (_e.g. in this case a newline character_)
 
+## 🔄 Template Caching
+
+By default, when _used as a library_, `shx` will cache the result of
+parsing each template file and store the compiled result.
+
+```sh
+source shx.sh
+
+# template.shx will be parsed and evaluated
+shx render path/to/template.shx
+
+# Parsing and compilation is skipped!
+# The template is evaluated directly from cache
+shx render path/to/template.sh
+```
+
+To disable this functionality:
+
+```sh
+SHX_CACHE=false
+```
+
+> Note: Caching only occurs when `shx.sh` is _used as a sourced library_
+
 ---
 
 
@@ -420,10 +444,9 @@ local __shx__providedTemplate="$__shx__originalTemplateArgument"
 #
 # Begin Cache Lookup
 #
+local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
 if [ -f "$__shx__providedTemplate" ] && [ "$SHX_CACHE" = true ]
 then
-  local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
-
   # Build up the new cache lookup field (may have MTIME file changes)
   declare -a __shx__cacheLookupIndex=()
 
@@ -452,7 +475,7 @@ then
       if [ "$__shx__currentTemplateFileMtime" = "$__shx__cacheEncodedItem_mtime" ]
       then
         # Equal! Just eval the previously compiled template
-        eval "${_SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]}" && return $?
+        eval "${_SHX_COMPILED_TEMPLATE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]}" && return $?
       else
         # Present but not equal, note to update it via its index
         # Update the item with the new MTIME
@@ -466,10 +489,10 @@ then
     else
       __shx__cacheLookupIndex+=("$__shx__cacheEncodedItem\n")
     fi
-  done < <( printf "${_SHX_TEMPLATE_FILE_CACHE[0]}" )
+  done < <( printf "${_SHX_COMPILED_TEMPLATE_CACHE[0]}" )
 
   # Update the cache index
-  _SHX_TEMPLATE_FILE_CACHE[0]="${__shx__cacheLookupIndex[*]}"
+  _SHX_COMPILED_TEMPLATE_CACHE[0]="${__shx__cacheLookupIndex[*]}"
 
   # If no template was found and eval'd and returned from the cache, grab a new one from the filesystem
   __shx__providedTemplate="$(<"$__shx__providedTemplate")"
@@ -605,13 +628,13 @@ if [ -f "$__shx__originalTemplateArgument" ] && [ "$SHX_CACHE" = true ]
 then
   if [ -n "$__shx__cacheEncodedItem_indexOfCompiledTemplate" ] # Existing item in the cache to update
   then
-    _SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
+    _SHX_COMPILED_TEMPLATE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
   else
     # Add a new item
     local __shx__actualMtime="$( date +"%s" -r "$__shx__originalTemplateArgument" 2>/dev/null || stat -x "$__shx__originalTemplateArgument" | grep "Modify" )"
-    local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
-    _SHX_TEMPLATE_FILE_CACHE[0]+="$__shx__itemIndexLine\n"
-    _SHX_TEMPLATE_FILE_CACHE+=("$__shx__COMPILED_TEMPLATE")
+    local __shx__itemIndexLine="${#_SHX_COMPILED_TEMPLATE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
+    _SHX_COMPILED_TEMPLATE_CACHE[0]+="$__shx__itemIndexLine\n"
+    _SHX_COMPILED_TEMPLATE_CACHE+=("$__shx__COMPILED_TEMPLATE")
   fi
 fi
 
