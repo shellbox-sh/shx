@@ -16,6 +16,14 @@ shx() {
   local __shx__mainCliCommands_command1="$1"
   shift
   case "$__shx__mainCliCommands_command1" in
+    "--version")
+    ## @command shx --version
+      ## Displays the current version of `shx.sh`
+      
+      echo "shx version $SHX_VERSION"
+    ## @
+
+        ;;
     "compile")
     ## @command shx compile
       ## @param $1 Template to compile (_string or path to file_)<br><br>
@@ -258,7 +266,7 @@ shx() {
           if [ "$__shx__cacheEncodedItem_filename" = "$__shx__providedTemplate" ]
           then
             # Get and check the mtime
-            local __shx__currentTemplateFileMtime="$( date +"%s" -r "$__shx__providedTemplate" 2>&1 || stat -x "$__shx__providedTemplate" | grep "Modify" )"
+            local __shx__currentTemplateFileMtime="$( date +"%s" -r "$__shx__providedTemplate" 2>/dev/null || stat -x "$__shx__providedTemplate" | grep "Modify" )"
       
             # MTIME
             local __shx__cacheEncodedItem_mtime="${__shx__cacheEncodedItem#*>}"
@@ -427,7 +435,7 @@ shx() {
           _SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
         else
           # Add a new item
-          local __shx__actualMtime="$( date +"%s" -r "$__shx__originalTemplateArgument" 2>&1 || stat -x "$__shx__originalTemplateArgument" | grep "Modify" )"
+          local __shx__actualMtime="$( date +"%s" -r "$__shx__originalTemplateArgument" 2>/dev/null || stat -x "$__shx__originalTemplateArgument" | grep "Modify" )"
           local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
           _SHX_TEMPLATE_FILE_CACHE[0]+="$__shx__itemIndexLine\n"
           _SHX_TEMPLATE_FILE_CACHE+=("$__shx__COMPILED_TEMPLATE")
@@ -457,14 +465,6 @@ shx() {
       unset __shx__cacheUpdatedEncodedItem
       
       eval "$__shx__COMPILED_TEMPLATE"
-    ## @
-
-        ;;
-    "--version")
-    ## @command shx --version
-      ## Displays the current version of `shx.sh`
-      
-      echo "shx version $SHX_VERSION"
     ## @
 
         ;;
