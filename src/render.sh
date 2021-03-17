@@ -1,3 +1,14 @@
+## @param $1 Template to compile (_string or path to file_)
+## @param $@ Any number of arguments.<br>Arguments which will be available to the evaluated template,<br>e.g. `$1` or `$*` or `$@`
+##
+## Render the provided template and evaluate the result, printing the template result to `STDOUT`.
+##
+## @example Simple String
+##   template='<%% for arg in "$@"; do %%>Arg:<%%= $arg %%> <%% done %%>'
+##   shx render "$template" "Hello" "World!"
+##   # => "Arg: Hello Arg: World!"
+##
+
 # Undocumented option, get the code for the template without evaluating it: --code
 local __shx__printCodeOnly=false
 [ "$1" = "--code" ] && { __shx__printCodeOnly=true; shift; }

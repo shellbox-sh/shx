@@ -1,0 +1,40 @@
+#! /usr/bin/env bash
+
+source vendor/docgen.sh
+source shx.sh
+
+tree="$( mktemp -d )"
+
+docgen parseTree setRoot "$tree"
+docgen parseToTree shx.sh
+
+tree -a "$tree"
+
+docgen context create new
+docgen context goto path "@commands/shx"
+
+context() { docgen context "$@"; }
+command() { docgen context commands "$@"; }
+
+commandReference="$( shx render docs/_templates/command_reference.shx.md )"
+
+generateWebsiteIndex() {
+  cp docs/_templates/websiteHeader.md docs/index.md
+  cat docs/_templates/index.md >> docs/index.md
+  echo "$commandReference" >> docs/index.md
+  cat docs/_templates/websiteFooter.md >> docs/index.md
+}
+
+generateREADME() {
+  cp docs/_templates/readmeHeader.md README.md
+  cat docs/_templates/index.md >> README.md
+  echo "$commandReference"             | \
+    sed 's/{% highlight sh %}/```sh/g' | \
+    sed 's/{% endhighlight %}/```/g'   | \
+    sed 's/{% raw %}//g'               | \
+    sed 's/{% endraw %}//g'              \
+    >> README.md
+}
+
+generateWebsiteIndex
+generateREADME

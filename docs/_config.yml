@@ -24,3 +24,4 @@ exclude:
   - CNAME
   - Gemfile
   - Gemfile.lock
+  - _templates

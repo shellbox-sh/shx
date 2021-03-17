@@ -6,6 +6,7 @@ SHX_CACHE=true
 
 _SHX_TEMPLATE_FILE_CACHE=("")
 
+## @command shx
 shx() {
   declare -a __shx__mainCliCommands=("shx")
   declare -a __shx__originalCliCommands=("$@")
@@ -16,6 +17,41 @@ shx() {
   shift
   case "$__shx__mainCliCommands_command1" in
     "compile")
+    ## @command shx compile
+      ## @param $1 Template to compile (_string or path to file_)<br><br>
+      ## @param $1 The first wo arguments may be `--out` `[variableName]`,
+      ## @param $1 in which case the compiled result will _not_ be
+      ## @param $1 printed and will instead be assigned to the provided variable.
+      ## @param $3 Template to compile (_string or path to file_)<br>if `$1` and `$2` are `--out` `[variableName]` respectively
+      ##
+      ## Compiles a provided template to a result which can be stored and
+      ## later evaluated via [`shx evaluate`](#shx-evaluate).
+      ##
+      ## This allows you to perform template parsing only once and
+      ## evaluate templates without the computational penalty of parsing.
+      ##
+      ## > Note: alternatively you may want to consider [Template caching](#template-caching)
+      ##
+      ## @example Compile Template
+      ##   template="<h1><%%= $1 %%></h1>"
+      ##   compiledTemplate="$( shx compile "$template" )"
+      ##   
+      ##   # Later ...
+      ##   
+      ##   shx evaluate "$compiledTemplate" "My Title"
+      ##   # => "<h1>My Title</h1>"
+      ##
+      ## @example Store in Variable
+      ##   template="<h1><%%= $1 %%></h1>"
+      ##   shx compile "$template" compiledTemplate
+      ##   # ^--- the compilated template is stored in $compiledTemplate
+      ##   
+      ##   # Later ...
+      ##   
+      ##   shx evaluate "$compiledTemplate" "My Title"
+      ##   # => "<h1>My Title</h1>"
+      ##
+      
       local __shx__outVariableName=''
       [ "$1" = "--out" ] && { shift; __shx__outVariableName="$1"; shift; }
       
@@ -165,15 +201,33 @@ shx() {
       else
         printf '%s' "$__shx__COMPILED_TEMPLATE"
       fi
+    ## @
 
         ;;
     "evaluate")
-      local __shx__COMPILED_TEMPLATE="$1"; shift
+    ## @command shx evaluate
+      ## @param $1 Compiled template provided via [`shx compile`](#shx-compile)
+      ##
+      ## Evaluates a previously compiled template.
       
-      echo "$( eval "$__shx__COMPILED_TEMPLATE" )"
+      local __shx__COMPILED_TEMPLATE="$1"; shift
+      eval "$__shx__COMPILED_TEMPLATE"
+    ## @
 
         ;;
     "render")
+    ## @command shx render
+      ## @param $1 Template to compile (_string or path to file_)
+      ## @param $@ Any number of arguments.<br>Arguments which will be available to the evaluated template,<br>e.g. `$1` or `$*` or `$@`
+      ##
+      ## Render the provided template and evaluate the result, printing the template result to `STDOUT`.
+      ##
+      ## @example Simple String
+      ##   template='<%% for arg in "$@"; do %%>Arg:<%%= $arg %%> <%% done %%>'
+      ##   shx render "$template" "Hello" "World!"
+      ##   # => "Arg: Hello Arg: World!"
+      ##
+      
       # Undocumented option, get the code for the template without evaluating it: --code
       local __shx__printCodeOnly=false
       [ "$1" = "--code" ] && { __shx__printCodeOnly=true; shift; }
@@ -403,97 +457,102 @@ shx() {
       unset __shx__cacheUpdatedEncodedItem
       
       eval "$__shx__COMPILED_TEMPLATE"
+    ## @
 
         ;;
     "--version")
+    ## @command shx --version
+      ## Displays the current version of `shx.sh`
+      
       echo "shx version $SHX_VERSION"
+    ## @
 
         ;;
     *)
-echo "shx version $SHX_VERSION"
-echo '
-Shell Script Templates
-> https://shx.shellbox.sh
-
-`shx` is a minimal BASH template renderer:
-
-Example template:
-
-    <html>
-      <head>
-        <title><%= $title %></title>
-      </head>
-      <body>
-        <ul>
-          <% for item in "${items[@]}"; do %>
-            <li><%= $item %></li>
-          <% done %>
-        </ul>
-      </body>
-    </html>
-
-To render a template, provide a file path to `shx render`:
-
-    $ shx render file.shx
-
-    # => <html> ...
-
-You can optionally pass command-line arguments to `shx render`
-
-    Example template using command-line arguments:
-
-    <html>
-      <head>
-        <title><%= $1 %><% shift %></title>
-      </head>
-      <body>
-        <ul>
-          <% for item in "$@"; do %>
-            <li><%= $item %></li>
-          <% done %>
-        </ul>
-      </body>
-    </html>
-
-    Call `shx render` with arguments:
-
-      $ shx render file.shx "My Title" "Hello" "World"
-
-      # => <h1>My Title</h1>
-      # => ...
-      # => <li>Hello</li>
-      # => <li>World</li>
-
-You can also provide a simple text string without a file:
-
-   $ shx render ''<h1><%= $1 %></h1>'' "Hello"
-
-   # => "<h1>Hello</h1>"
-
-Note: If you run `shx` as a binary, only exported variables
-   will be available.
-
-If you use `shx` as a library, all variables in the
-current scope (including `local` variables) will
-be available for use:
-
-    source shx.sh
-
-    myFunction() {
-      local answer=42
-      shx render "<h1>The answer is: <%= $answer %></h1>
-    }
-
-    myFunction
-
-    # => "<h1>The answer is 42</h1>
-
-Syntax Highlighting:
-
-  Name shx templates using a .erb or .asp or similar file extension
-  for best syntax highlighting experience in your preferred text editor
-  -or- configure .shx to use one of these syntax highlighers.
-'
+      echo "shx version $SHX_VERSION"
+      echo '
+      Shell Script Templates
+      > https://shx.shellbox.sh
+      
+      `shx` is a minimal BASH template renderer:
+      
+      Example template:
+      
+          <html>
+            <head>
+              <title><%= $title %></title>
+            </head>
+            <body>
+              <ul>
+                <% for item in "${items[@]}"; do %>
+                  <li><%= $item %></li>
+                <% done %>
+              </ul>
+            </body>
+          </html>
+      
+      To render a template, provide a file path to `shx render`:
+      
+          $ shx render file.shx
+      
+          # => <html> ...
+      
+      You can optionally pass command-line arguments to `shx render`
+      
+          Example template using command-line arguments:
+      
+          <html>
+            <head>
+              <title><%= $1 %><% shift %></title>
+            </head>
+            <body>
+              <ul>
+                <% for item in "$@"; do %>
+                  <li><%= $item %></li>
+                <% done %>
+              </ul>
+            </body>
+          </html>
+      
+          Call `shx render` with arguments:
+      
+            $ shx render file.shx "My Title" "Hello" "World"
+      
+            # => <h1>My Title</h1>
+            # => ...
+            # => <li>Hello</li>
+            # => <li>World</li>
+      
+      You can also provide a simple text string without a file:
+      
+         $ shx render ''<h1><%= $1 %></h1>'' "Hello"
+      
+         # => "<h1>Hello</h1>"
+      
+      Note: If you run `shx` as a binary, only exported variables
+         will be available.
+      
+      If you use `shx` as a library, all variables in the
+      current scope (including `local` variables) will
+      be available for use:
+      
+          source shx.sh
+      
+          myFunction() {
+            local answer=42
+            shx render "<h1>The answer is: <%= $answer %></h1>
+          }
+      
+          myFunction
+      
+          # => "<h1>The answer is 42</h1>
+      
+      Syntax Highlighting:
+      
+        Name shx templates using a .erb or .asp or similar file extension
+        for best syntax highlighting experience in your preferred text editor
+        -or- configure .shx to use one of these syntax highlighers.
+      '
       ;;
   esac
 

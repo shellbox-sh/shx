@@ -1,3 +1,37 @@
+## @param $1 Template to compile (_string or path to file_)<br><br>
+## @param $1 The first wo arguments may be `--out` `[variableName]`,
+## @param $1 in which case the compiled result will _not_ be
+## @param $1 printed and will instead be assigned to the provided variable.
+## @param $3 Template to compile (_string or path to file_)<br>if `$1` and `$2` are `--out` `[variableName]` respectively
+##
+## Compiles a provided template to a result which can be stored and
+## later evaluated via [`shx evaluate`](#shx-evaluate).
+##
+## This allows you to perform template parsing only once and
+## evaluate templates without the computational penalty of parsing.
+##
+## > Note: alternatively you may want to consider [Template caching](#template-caching)
+##
+## @example Compile Template
+##   template="<h1><%%= $1 %%></h1>"
+##   compiledTemplate="$( shx compile "$template" )"
+##   
+##   # Later ...
+##   
+##   shx evaluate "$compiledTemplate" "My Title"
+##   # => "<h1>My Title</h1>"
+##
+## @example Store in Variable
+##   template="<h1><%%= $1 %%></h1>"
+##   shx compile "$template" compiledTemplate
+##   # ^--- the compilated template is stored in $compiledTemplate
+##   
+##   # Later ...
+##   
+##   shx evaluate "$compiledTemplate" "My Title"
+##   # => "<h1>My Title</h1>"
+##
+
 local __shx__outVariableName=''
 [ "$1" = "--out" ] && { shift; __shx__outVariableName="$1"; shift; }
 

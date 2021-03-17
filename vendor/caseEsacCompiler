@@ -61,6 +61,7 @@ caseEsacCompiler() {
 $(<"$fileHeaderFilePath")
 "
       sourceFileContent="${sourceFileContent}
+## @command $topLevelFunctionName
 $topLevelFunctionName() {
   declare -a __${topLevelFunctionName}__mainCliCommands=(\"$topLevelFunctionName\")
   declare -a __${topLevelFunctionName}__originalCliCommands=(\"\$@\")
@@ -99,17 +100,19 @@ $(<"$fileFooterFilePath")
     ## | `$3` | Full path to this source file |
     ##
     _loadSourceFile)
-      local fullCommandName="$2"
+      local commandDepth="$2"
+      local fullCommandName="$3"
       local commandName="${fullCommandName##* }"
       local parentCommandName="${fullCommandName% *}"
       local functionName="${fullCommandName%% *}"
-      local sourceFile="$3"
+      local sourceFile="$4"
 
       local sourceFileContent="$(<"$sourceFile")"
       sourceFileContent="${sourceFileContent//CASE_COMMAND_ESAC/$commandName}"
       sourceFileContent="${sourceFileContent//CASE_FULL_COMMAND_ESAC/$fullCommandName}"
       sourceFileContent="${sourceFileContent//CASE_PARENT_COMMAND_ESAC/$parentCommandName}"
       sourceFileContent="${sourceFileContent//CASE_FUNCTION_ESAC/$functionName}"
+      sourceFileContent="${sourceFileContent//CASE_COMMAND_VARIABLE_ESAC/__${functionName}__mainCliCommands_command${commandDepth}}"
       sourceFileContent="${sourceFileContent//FN/$functionName}"
 
       if echo "$sourceFileContent" | head -1 | grep "() {" &>/dev/null
@@ -164,13 +167,19 @@ $(<"$fileFooterFilePath")
         commandName="${commandName%.sh}"
         [ "$commandName" = "*" ] && continue
         echo "${indentation}  \"$commandName\")"
+        echo "${indentation}  ## @command ${fullCommandName}"
+        if [ -f "$commandFileOrSubcommandDirectory/.docs.sh" ]
+        then
+          caseEsacCompiler _loadSourceFile "$commandDepth" "$fullCommandName" "$commandFileOrSubcommandDirectory/.docs.sh"  | sed "s/^/$indentation  /"
+        fi
         if [ -d "$commandFileOrSubcommandDirectory" ]
         then
           caseEsacCompiler _caseEsacForDir "$(( $commandDepth + 1 ))" "$commandFileOrSubcommandDirectory" "$rootCommandsDirectoryPath" "$topLevelFunctionName" | sed "s/^/$indentation/"
         elif [ -f "$commandFileOrSubcommandDirectory" ]
         then
-          caseEsacCompiler _loadSourceFile "$fullCommandName" "$commandFileOrSubcommandDirectory" | sed "s/^/$indentation    /"
+          caseEsacCompiler _loadSourceFile "$commandDepth" "$fullCommandName" "$commandFileOrSubcommandDirectory" | sed "s/^/$indentation    /"
         fi
+        echo "${indentation}  ## @"
         echo -e "\n${indentation}      ;;"
       done
       echo "${indentation}  *)"
@@ -181,7 +190,7 @@ $(<"$fileFooterFilePath")
       then
         if [ -f "$commandsDirectoryPath/.index.sh" ]
         then
-          caseEsacCompiler _loadSourceFile "$topLevelFunctionName" "$commandsDirectoryPath/.index.sh"
+          caseEsacCompiler _loadSourceFile "$commandDepth" "$topLevelFunctionName" "$commandsDirectoryPath/.index.sh" | sed "s/^/$indentation    /"
         else
           echo "${indentation}    echo \"Unknown '$topLevelFunctionName' command: \$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" >&2"
         fi
@@ -189,7 +198,7 @@ $(<"$fileFooterFilePath")
         local subCommandFolder="${commandFileOrSubcommandDirectory%/*}"
         if [ -f "$subCommandFolder/.index.sh" ]
         then
-          caseEsacCompiler _loadSourceFile "$topLevelFunctionName $subCommandName" "$subCommandFolder/.index.sh"
+          caseEsacCompiler _loadSourceFile "$commandDepth" "$topLevelFunctionName $subCommandName" "$subCommandFolder/.index.sh" | sed "s/^/$indentation    /"
         else
           echo "${indentation}    echo \"Unknown '$topLevelFunctionName $subCommandName' command: \$__${topLevelFunctionName}__mainCliCommands_command${commandDepth}\" >&2"
           echo "${indentation}    return 1"
