@@ -3,65 +3,69 @@ local __shx__printCodeOnly=false
 [ "$1" = "--code" ] && { __shx__printCodeOnly=true; shift; }
 
 # Shift so that templates can properly read in provided "$1" "$@" etc to the `render` function
-local __shx__providedTemplateArgument="$1"; shift
-local __shx__providedTemplate="$__shx__providedTemplateArgument"
+local __shx__originalTemplateArgument="$1"; shift
+local __shx__providedTemplate="$__shx__originalTemplateArgument"
 
+#
+# Begin Cache Lookup
+#
 if [ -f "$__shx__providedTemplate" ] && [ "$SHX_CACHE" = true ]
 then
-  local __shx__indexOfTemplateItemInCache=''
+  local __shx__cacheEncodedItem_indexOfCompiledTemplate=''
 
-  # Check the template cache
-  declare -a __shx__templateCacheIndex=()
-  declare -a __shx__updatedCacheIndex=()
-  local __shx__templateCacheItem=''
-  
-   while IFS="" read -r __shx__templateCacheItem
-   do
-    [ -z "$__shx__templateCacheItem" ] && continue # trailing newline handling
-    local __shx__updatedCacheIndexLine=''
-    local __shx__templateCacheFilename="${__shx__templateCacheItem##*|}"
+  # Build up the new cache lookup field (may have MTIME file changes)
+  declare -a __shx__cacheLookupIndex=()
+
+  # Loop Thru Every Item in the Cache, including it's Filename, Mtime,
+  # and index to compiled template in the cache
+  local __shx__cacheEncodedItem=''
+  while IFS="" read -r __shx__cacheEncodedItem
+  do
+    local __shx__cacheUpdatedEncodedItem=''
+    local __shx__cacheEncodedItem_filename="${__shx__cacheEncodedItem##*|}"
 
     # Found the item
-    if [ "$__shx__templateCacheFilename" = "$__shx__providedTemplate" ]
+    if [ "$__shx__cacheEncodedItem_filename" = "$__shx__providedTemplate" ]
     then
       # Get and check the mtime
-      local __shx__templateActualFileMtime="$( date +"%s" -r "$__shx__providedTemplate" )"
+      local __shx__currentTemplateFileMtime="$( date +"%s" -r "$__shx__providedTemplate" )"
 
       # MTIME
-      local __shx__templateCacheFileMtime="${__shx__templateCacheItem#*>}"
-      __shx__templateCacheFileMtime="${__shx__templateCacheFileMtime%%|*}"
+      local __shx__cacheEncodedItem_mtime="${__shx__cacheEncodedItem#*>}"
+      __shx__cacheEncodedItem_mtime="${__shx__cacheEncodedItem_mtime%%|*}"
 
       # Index
-      __shx__indexOfTemplateItemInCache="${__shx__templateCacheItem%%*<}"
-      __shx__indexOfTemplateItemInCache="${__shx__indexOfTemplateItemInCache%>*}"
+      __shx__cacheEncodedItem_indexOfCompiledTemplate="${__shx__cacheEncodedItem%%*<}"
+      __shx__cacheEncodedItem_indexOfCompiledTemplate="${__shx__cacheEncodedItem_indexOfCompiledTemplate%>*}"
 
-      if [ "$__shx__templateActualFileMtime" = "$__shx__templateCacheFileMtime" ]
+      if [ "$__shx__currentTemplateFileMtime" = "$__shx__cacheEncodedItem_mtime" ]
       then
         # Equal! Just eval the previously compiled template
-        eval "${_SHX_TEMPLATE_FILE_CACHE[$__shx__indexOfTemplateItemInCache]}" && return $?
+        eval "${_SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]}" && return $?
       else
         # Present but not equal, note to update it via its index
         # Update the item with the new MTIME
-        local __shx__updatedCacheIndexLine="$__shx__indexOfTemplateItemInCache>$__shx__templateActualFileMtime|$__shx__templateCacheFilename"
+        local __shx__cacheUpdatedEncodedItem="$__shx__cacheEncodedItem_indexOfCompiledTemplate>$__shx__currentTemplateFileMtime|$__shx__cacheEncodedItem_filename"
       fi
     fi
 
-    if [ -n "$__shx__updatedCacheIndexLine" ]
+    if [ -n "$__shx__cacheUpdatedEncodedItem" ]
     then
-      __shx__updatedCacheIndex+=("$__shx__updatedCacheIndexLine\n")
+      __shx__cacheLookupIndex+=("$__shx__cacheUpdatedEncodedItem\n")
     else
-      __shx__updatedCacheIndex+=("$__shx__templateCacheItem\n")
+      __shx__cacheLookupIndex+=("$__shx__cacheEncodedItem\n")
     fi
   done < <( printf "${_SHX_TEMPLATE_FILE_CACHE[0]}" )
 
-  unset __shx__templateCacheIndex
-
   # Update the cache index
-  _SHX_TEMPLATE_FILE_CACHE[0]="${__shx__updatedCacheIndex[*]}"
+  _SHX_TEMPLATE_FILE_CACHE[0]="${__shx__cacheLookupIndex[*]}"
 
   # If no template was found and eval'd and returned from the cache, grab a new one from the filesystem
   __shx__providedTemplate="$(<"$__shx__providedTemplate")"
 fi
+#
+# End Cache Lookup
+#
 
 # Like most similar implementations across programming languages,
 # the template render process builds up a script with lots of printf
@@ -186,15 +190,15 @@ then
   return 0
 fi
 
-if [ -f "$__shx__providedTemplateArgument" ] && [ "$SHX_CACHE" = true ]
+if [ -f "$__shx__originalTemplateArgument" ] && [ "$SHX_CACHE" = true ]
 then
-  if [ -n "$__shx__indexOfTemplateItemInCache" ] # Existing item in the cache to update
+  if [ -n "$__shx__cacheEncodedItem_indexOfCompiledTemplate" ] # Existing item in the cache to update
   then
-    _SHX_TEMPLATE_FILE_CACHE[$__shx__indexOfTemplateItemInCache]="$__shx__COMPILED_TEMPLATE"
+    _SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
   else
     # Add a new item
-    local __shx__actualMtime="$( date +"%s" -r "$__shx__providedTemplateArgument" )"
-    local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__providedTemplateArgument"
+    local __shx__actualMtime="$( date +"%s" -r "$__shx__originalTemplateArgument" )"
+    local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
     _SHX_TEMPLATE_FILE_CACHE[0]+="$__shx__itemIndexLine\n"
     _SHX_TEMPLATE_FILE_CACHE+=("$__shx__COMPILED_TEMPLATE")
   fi
@@ -211,5 +215,15 @@ unset __shx__codeBlockDefinitionOpen
 unset __shx__heredocCount
 unset __shx__printCodeOnly
 unset __shx__newLine
+unset __shx__originalTemplateArgument
+unset __shx__providedTemplate
+unset __shx__cacheEncodedItem_indexOfCompiledTemplate
+unset __shx__cacheLookupIndex
+unset __shx__cacheEncodedItem
+unset __shx__cacheUpdatedEncodedItem
+unset __shx__cacheEncodedItem_filename
+unset __shx__currentTemplateFileMtime
+unset __shx__cacheEncodedItem_mtime
+unset __shx__cacheUpdatedEncodedItem
 
 eval "$__shx__COMPILED_TEMPLATE"
