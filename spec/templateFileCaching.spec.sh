@@ -46,7 +46,7 @@
   expect "${_SHX_TEMPLATE_FILE_CACHE[1]}" toContain "Hello" '$1' "template was updated"
   expect "${_SHX_TEMPLATE_FILE_CACHE[1]}" not toContain "Rebecca" # Doesn't save the result of the eval
 
-  NOW, let's update it. But trick the cache into thinking it's up-to-date
+  # NOW, let's update it. But trick the cache into thinking it's up-to-date
 
   local mtimeBeforeUpdate="$( date +%s -r "$templateFile" 2>/dev/null || stat -x "$templateFile" | grep "Modify" )"
   sleep 1
