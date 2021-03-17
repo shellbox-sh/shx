@@ -258,7 +258,7 @@ shx() {
           if [ "$__shx__cacheEncodedItem_filename" = "$__shx__providedTemplate" ]
           then
             # Get and check the mtime
-            local __shx__currentTemplateFileMtime="$( stat -c %Y "$__shx__providedTemplate" )"
+            local __shx__currentTemplateFileMtime="$( date +"%s" -r "$__shx__providedTemplate" )"
       
             # MTIME
             local __shx__cacheEncodedItem_mtime="${__shx__cacheEncodedItem#*>}"
@@ -427,7 +427,7 @@ shx() {
           _SHX_TEMPLATE_FILE_CACHE[$__shx__cacheEncodedItem_indexOfCompiledTemplate]="$__shx__COMPILED_TEMPLATE"
         else
           # Add a new item
-          local __shx__actualMtime="$( stat -c %Y "$__shx__originalTemplateArgument" )"
+          local __shx__actualMtime="$( date +"%s" -r "$__shx__originalTemplateArgument" )"
           local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__originalTemplateArgument"
           _SHX_TEMPLATE_FILE_CACHE[0]+="$__shx__itemIndexLine\n"
           _SHX_TEMPLATE_FILE_CACHE+=("$__shx__COMPILED_TEMPLATE")
