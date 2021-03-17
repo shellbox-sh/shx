@@ -1,7 +1,3 @@
-# Undocumented option, get the code for the template without evaluating it: --code
-local __shx__printCodeOnly=false
-[ "$1" = "--code" ] && { __shx__printCodeOnly=true; shift; }
-
 # Shift so that templates can properly read in provided "$1" "$@" etc to the `render` function
 local __shx__providedTemplate="$1"; shift
 
@@ -22,7 +18,6 @@ local __shx__valueBlockOpen=false
 local __shx__codeBlockDefinition=''
 local __shx__codeBlockDefinitionOpen=false
 local __shx__heredocCount=0
-local __shx__newLine=$'\n'
 
 # We legit loop thru all the characters.
 local __shx__cursor=0
@@ -48,13 +43,13 @@ do
     then
       __shx__valueBlockOpen=false
       __shx__valueBlock="${__shx__valueBlock# }"
-      __shx__outputScriptToEval+="${__shx__newLine}printf '%s' \"${__shx__valueBlock% }\"${__shx__newLine}"
+      __shx__outputScriptToEval+="\nprintf '%%s' \"${__shx__valueBlock% }\"\n"
       __shx__valueBlock=''
     elif [ "$__shx__codeBlockDefinitionOpen" = true ]
     then
       __shx__codeBlockDefinitionOpen=false
       __shx__codeBlockDefinition="${__shx__codeBlockDefinition# }"
-      __shx__outputScriptToEval+="${__shx__newLine}${__shx__codeBlockDefinition% }${__shx__newLine}"
+      __shx__outputScriptToEval+="\n${__shx__codeBlockDefinition% }\n"
       __shx__codeBlockDefinition=''
     else
       echo "FN [RenderError] unexpected %> encountered, no <% or <%= blocks are currently open" >&2
@@ -67,13 +62,13 @@ do
     then
       __shx__valueBlockOpen=false
       __shx__valueBlock="${__shx__valueBlock# }"
-      __shx__outputScriptToEval+="${__shx__newLine}printf '%s' \"${__shx__valueBlock% }\"${__shx__newLine}"
+      __shx__outputScriptToEval+="\nprintf '%%s' \"${__shx__valueBlock% }\"\n"
       __shx__valueBlock=''
     elif [ "$__shx__codeBlockDefinitionOpen" = true ]
     then
       __shx__codeBlockDefinitionOpen=false
       __shx__codeBlockDefinition="${__shx__codeBlockDefinition# }"
-      __shx__outputScriptToEval+="${__shx__newLine}${__shx__codeBlockDefinition% }${__shx__newLine}"
+      __shx__outputScriptToEval+="\n${__shx__codeBlockDefinition% }\n"
       __shx__codeBlockDefinition=''
     else
       echo "FN [RenderError] unexpected %> encountered, no <% or <%= blocks are currently open" >&2
@@ -96,11 +91,11 @@ do
     if [ -n "$__shx__stringBuilder" ]
     then
       : "$(( __shx__heredocCount++ ))"
-      __shx__outputScriptToEval+="${__shx__newLine}IFS= read -r -d '' __SHX_HEREDOC_$__shx__heredocCount << 'SHX_PRINT_BLOCK'${__shx__newLine}"
+      __shx__outputScriptToEval+="\nIFS= read -r -d '' __SHX_HEREDOC_$__shx__heredocCount<< 'SHX_PRINT_BLOCK'\n"
       __shx__outputScriptToEval+="$__shx__stringBuilder"
-      __shx__outputScriptToEval+="${__shx__newLine}SHX_PRINT_BLOCK"
-      __shx__outputScriptToEval+="${__shx__newLine}printf '%s' \"\${__SHX_HEREDOC_$__shx__heredocCount%$'\\n'}\""
-      __shx__outputScriptToEval+="${__shx__newLine}unset __SHX_HEREDOC_$__shx__heredocCount"
+      __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
+      __shx__outputScriptToEval+="\nprintf '%%s' \"\${__SHX_HEREDOC_$__shx__heredocCount%%\"\n\"}\""
+      __shx__outputScriptToEval+="\nunset __SHX_HEREDOC_$__shx__heredocCount"
       __shx__stringBuilder=''
     fi
   fi
@@ -110,36 +105,17 @@ done
 
 if [ -n "$__shx__stringBuilder" ]
 then
-    __shx__outputScriptToEval+="${__shx__newLine}IFS= read -r -d '' __SHX_HEREDOC_$__shx__heredocCount << 'SHX_PRINT_BLOCK'${__shx__newLine}"
+    __shx__outputScriptToEval+="\nIFS= read -r -d '' __SHX_HEREDOC_$__shx__heredocCount<< 'SHX_PRINT_BLOCK'\n"
   __shx__outputScriptToEval+="$__shx__stringBuilder"
-  __shx__outputScriptToEval+="${__shx__newLine}SHX_PRINT_BLOCK"
-  __shx__outputScriptToEval+="${__shx__newLine}printf '%s' \"\${__SHX_HEREDOC_$__shx__heredocCount%$'\\\n'}\""
-  __shx__outputScriptToEval+="${__shx__newLine}unset __SHX_HEREDOC_$__shx__heredocCount"
+  __shx__outputScriptToEval+="\nSHX_PRINT_BLOCK"
+  __shx__outputScriptToEval+="\nprintf '%%s' \"\${__SHX_HEREDOC_$__shx__heredocCount%%\"\n\"}\""
+  __shx__outputScriptToEval+="\nunset \__SHX_HEREDOC_$__shx__heredocCount"
   __shx__stringBuilder=''
 fi
 
 [ "$__shx__codeBlockDefinitionOpen" = true ] && { echo "FN [RenderError] <% block was not closed: '$__shx__codeBlockDefinition'" >&2; return 1; }
 [ "$__shx__valueBlockOpen" = true ] && { echo "FN [RenderError] <%= was not closed: '$__shx__valueBlock'" >&2; return 1; }
 
-# local __shx__COMPILED_TEMPLATE="$( printf '%s' "$__shx__outputScriptToEval" )"
-local __shx__COMPILED_TEMPLATE="$__shx__outputScriptToEval"
+local readyToEval="$( printf '%s' "$__shx__outputScriptToEval" )"
 
-if [ "$__shx__printCodeOnly" = true ]
-then
-  echo "$__shx__COMPILED_TEMPLATE"
-  return 0
-fi
-
-unset __shx__cursor
-unset __shx__outputScriptToEval
-unset __shx__stringBuilder
-unset __shx__stringBuilderComplete
-unset __shx__valueBlock
-unset __shx__valueBlockOpen
-unset __shx__codeBlockDefinition
-unset __shx__codeBlockDefinitionOpen
-unset __shx__heredocCount
-unset __shx__printCodeOnly
-unset __shx__newLine
-
-eval "$__shx__COMPILED_TEMPLATE"
+echo "$readyToEval"

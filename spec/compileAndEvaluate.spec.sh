@@ -15,7 +15,7 @@ template='<html>
 </html>
 '
 
-@spec.hello_world() {
+@pending.compile_and_evaluate.hello_world() {
 expected='<html>
   <head>
     <title>Hello, world!</title>
@@ -28,11 +28,20 @@ expected='<html>
   </body>
 </html>'
 
-  shx render --code "$template" | cat -A
-  expect { shx render "$template" } toEqual "$expected"
+  local compiled="$( shx compile "$template" )"
+  expect "$compiled" toContain "printf"
+  expect "$compiled" not toContain "Item A"
+  expect "$compiled" not toContain "Hello, world!"
+
+  local var
+  shx compile "$template" var
+  expect "$var" toEqual "$compiled"
+
+  expect { shx evaluate "$compiled" } toEqual "$expected"
+  expect { shx evaluate "$var" } toEqual "$expected"
 }
 
-@spec.hello_world.fromFile() {
+@pending.compile_and_evaluate.hello_world.fromFile() {
 expected='<html>
   <head>
     <title>Hello, world!</title>
