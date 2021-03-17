@@ -28,7 +28,6 @@ expected='<html>
   </body>
 </html>'
 
-  shx render --code "$template" | cat -A
   expect { shx render "$template" } toEqual "$expected"
 }
 

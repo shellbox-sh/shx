@@ -72,8 +72,6 @@ expected='3 arguments provided:
 
 - Third'
 
-  shx render --code "$template" "First" "Second" "Third" | cat -A
-
   expect { shx render "$template" "First" "Second" "Third" } toEqual "$expected"
 
 template='<%= $# %> arguments provided:
