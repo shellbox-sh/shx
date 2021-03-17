@@ -15,7 +15,7 @@ template='<html>
 </html>
 '
 
-@pending.compile_and_evaluate.hello_world() {
+@spec.compile_and_evaluate.hello_world() {
 expected='<html>
   <head>
     <title>Hello, world!</title>
@@ -34,14 +34,14 @@ expected='<html>
   expect "$compiled" not toContain "Hello, world!"
 
   local var
-  shx compile "$template" var
+  shx compile --out var "$template"
   expect "$var" toEqual "$compiled"
 
   expect { shx evaluate "$compiled" } toEqual "$expected"
   expect { shx evaluate "$var" } toEqual "$expected"
 }
 
-@pending.compile_and_evaluate.hello_world.fromFile() {
+@spec.compile_and_evaluate.hello_world.fromFile() {
 expected='<html>
   <head>
     <title>Hello, world!</title>
@@ -54,7 +54,17 @@ expected='<html>
   </body>
 </html>'
 
-  expect { shx render "${BASH_SOURCE[0]%/*}/helloWorld.shx" } toEqual "$expected"
+  local compiled="$( shx compile "${BASH_SOURCE[0]%/*}/helloWorld.shx" )"
+  expect "$compiled" toContain "printf"
+  expect "$compiled" not toContain "Item A"
+  expect "$compiled" not toContain "Hello, world!"
+
+  local var
+  shx compile --out var "${BASH_SOURCE[0]%/*}/helloWorld.shx"
+  expect "$var" toEqual "$compiled"
+
+  expect { shx evaluate "$compiled" } toEqual "$expected"
+  expect { shx evaluate "$var" } toEqual "$expected"
 }
 
 @spec.hello_world.simple_string() {

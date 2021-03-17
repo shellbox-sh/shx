@@ -3,9 +3,65 @@ local __shx__printCodeOnly=false
 [ "$1" = "--code" ] && { __shx__printCodeOnly=true; shift; }
 
 # Shift so that templates can properly read in provided "$1" "$@" etc to the `render` function
-local __shx__providedTemplate="$1"; shift
+local __shx__providedTemplateArgument="$1"; shift
+local __shx__providedTemplate="$__shx__providedTemplateArgument"
 
-[ -f "$__shx__providedTemplate" ] && __shx__providedTemplate="$(<"$__shx__providedTemplate")"
+if [ -f "$__shx__providedTemplate" ] && [ "$SHX_CACHE" = true ]
+then
+  local __shx__indexOfTemplateItemInCache=''
+
+  # Check the template cache
+  declare -a __shx__templateCacheIndex=()
+  declare -a __shx__updatedCacheIndex=()
+  local __shx__templateCacheItem=''
+  
+   while IFS="" read -r __shx__templateCacheItem
+   do
+    [ -z "$__shx__templateCacheItem" ] && continue # trailing newline handling
+    local __shx__updatedCacheIndexLine=''
+    local __shx__templateCacheFilename="${__shx__templateCacheItem##*|}"
+
+    # Found the item
+    if [ "$__shx__templateCacheFilename" = "$__shx__providedTemplate" ]
+    then
+      # Get and check the mtime
+      local __shx__templateActualFileMtime="$( date +"%s" -r "$__shx__providedTemplate" )"
+
+      # MTIME
+      local __shx__templateCacheFileMtime="${__shx__templateCacheItem#*>}"
+      __shx__templateCacheFileMtime="${__shx__templateCacheFileMtime%%|*}"
+
+      # Index
+      __shx__indexOfTemplateItemInCache="${__shx__templateCacheItem%%*<}"
+      __shx__indexOfTemplateItemInCache="${__shx__indexOfTemplateItemInCache%>*}"
+
+      if [ "$__shx__templateActualFileMtime" = "$__shx__templateCacheFileMtime" ]
+      then
+        # Equal! Just eval the previously compiled template
+        eval "${_SHX_TEMPLATE_FILE_CACHE[$__shx__indexOfTemplateItemInCache]}" && return $?
+      else
+        # Present but not equal, note to update it via its index
+        # Update the item with the new MTIME
+        local __shx__updatedCacheIndexLine="$__shx__indexOfTemplateItemInCache>$__shx__templateActualFileMtime|$__shx__templateCacheFilename"
+      fi
+    fi
+
+    if [ -n "$__shx__updatedCacheIndexLine" ]
+    then
+      __shx__updatedCacheIndex+=("$__shx__updatedCacheIndexLine\n")
+    else
+      __shx__updatedCacheIndex+=("$__shx__templateCacheItem\n")
+    fi
+  done < <( printf "${_SHX_TEMPLATE_FILE_CACHE[0]}" )
+
+  unset __shx__templateCacheIndex
+
+  # Update the cache index
+  _SHX_TEMPLATE_FILE_CACHE[0]="${__shx__updatedCacheIndex[*]}"
+
+  # If no template was found and eval'd and returned from the cache, grab a new one from the filesystem
+  __shx__providedTemplate="$(<"$__shx__providedTemplate")"
+fi
 
 # Like most similar implementations across programming languages,
 # the template render process builds up a script with lots of printf
@@ -128,6 +184,20 @@ if [ "$__shx__printCodeOnly" = true ]
 then
   echo "$__shx__COMPILED_TEMPLATE"
   return 0
+fi
+
+if [ -f "$__shx__providedTemplateArgument" ] && [ "$SHX_CACHE" = true ]
+then
+  if [ -n "$__shx__indexOfTemplateItemInCache" ] # Existing item in the cache to update
+  then
+    _SHX_TEMPLATE_FILE_CACHE[$__shx__indexOfTemplateItemInCache]="$__shx__COMPILED_TEMPLATE"
+  else
+    # Add a new item
+    local __shx__actualMtime="$( date +"%s" -r "$__shx__providedTemplateArgument" )"
+    local __shx__itemIndexLine="${#_SHX_TEMPLATE_FILE_CACHE[@]}>$__shx__actualMtime|$__shx__providedTemplateArgument"
+    _SHX_TEMPLATE_FILE_CACHE[0]+="$__shx__itemIndexLine\n"
+    _SHX_TEMPLATE_FILE_CACHE+=("$__shx__COMPILED_TEMPLATE")
+  fi
 fi
 
 unset __shx__cursor
